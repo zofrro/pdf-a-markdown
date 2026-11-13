@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF + OCR a Markdown — Optimizado para IA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    :root {
+      --bg-base: #E6E8E8;
+      --bg-surface: #FFFFFF;
+      --bg-inner: #F4F6F6;
+      --border-subtle: #D4D9D8;
+      --charcoal: #222625;
+      --charcoal-hover: #141716;
+      --slate-text: #5C6463;
+      --slate-muted: #848E8C;
+      --lime-accent: #58C926;
+      --lime-hover: #4AB01E;
+      --lime-soft: rgba(88, 201, 38, 0.12);
+      --cyan-tech: #00C2FF;
+      --cyan-soft: rgba(0, 194, 255, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--charcoal);
+      min-height: 100vh;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 88% 12%, rgba(0, 194, 255, 0.15) 0%, transparent 38%),
+        radial-gradient(circle at 12% 85%, rgba(88, 201, 38, 0.13) 0%, transparent 40%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(rgba(34, 38, 37, 0.035) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(34, 38, 37, 0.035) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1160px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--charcoal);
+      padding: 6px 15px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 12px rgba(34, 38, 37, 0.05);
+    }
+
+    .pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--lime-accent);
+      box-shadow: 0 0 8px rgba(88, 201, 38, 0.6);
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 4.5vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      margin-bottom: 16px;
+      color: var(--charcoal);
+    }
+
+    .text-highlight {
+      color: var(--lime-accent);
+    }
+
+    .accent-bar {
+      width: 64px;
+      height: 5px;
+      background: linear-gradient(90deg, var(--lime-accent) 0%, var(--cyan-tech) 100%);
+      border-radius: 99px;
+      margin: 0 auto 18px auto;
+    }
+
+    .subtitle {
+      color: var(--slate-text);
+      font-size: 1.05rem;
+      max-width: 620px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 880px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 22px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 18px 36px -14px rgba(34, 38, 37, 0.08);
+    }
+
+    .panel-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .panel-title-group h2 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--charcoal);
+    }
+
+    .panel-title-group p {
+      font-size: 0.84rem;
+      color: var(--slate-text);
+      margin-top: 4px;
+    }
+
+    .step-tag {
+      background: var(--charcoal);
+      color: #FFFFFF;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.74rem;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 8px;
+    }
+
+    .dropzone {
+      background: var(--bg-inner);
+      border: 2px dashed #C2C9C8;
+      border-radius: 16px;
+      padding: 34px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--lime-accent);
+      background: rgba(88, 201, 38, 0.05);
+    }
+
+    .icon-circle {
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
+      background: var(--charcoal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      color: var(--lime-accent);
+      box-shadow: 0 8px 16px rgba(34, 38, 37, 0.15);
+    }
+
+    .dropzone-heading {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--charcoal);
+      margin-bottom: 5px;
+    }
+
+    .dropzone-hint {
+      font-size: 0.83rem;
+      color: var(--slate-text);
+      margin-bottom: 16px;
+    }
+
+    .btn-browse {
+      background: var(--bg-surface);
+      color: var(--charcoal);
+      border: 1.5px solid var(--border-subtle);
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-browse:hover {
+      border-color: var(--charcoal);
+      background: var(--charcoal);
+      color: #FFFFFF;
+    }
+
+    .ocr-options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-inner);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      gap: 10px;
+    }
+
+    .ocr-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--charcoal);
+      font-weight: 700;
+    }
+
+    .ocr-badge {
+      background: var(--cyan-soft);
+      color: #0082AB;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    select.ocr-select {
+      background: var(--bg-surface);
+      color: var(--charcoal);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .file-card {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: var(--lime-soft);
+      border: 1px solid rgba(88, 201, 38, 0.4);
+      border-radius: 12px;
+      padding: 11px 14px;
+      margin-bottom: 14px;
+    }
+
+    .file-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .file-name {
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--charcoal);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 230px;
+    }
+
+    .file-size {
+      font-size: 0.74rem;
+      color: #3D9417;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .btn-remove {
+      background: none;
+      border: none;
+      color: var(--slate-text);
+      cursor: pointer;
+      font-size: 1.05rem;
+      font-weight: 700;
+      padding: 4px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 12px;
+      border: none;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      color: #FFFFFF;
+      background: var(--lime-accent);
+      box-shadow: 0 8px 20px -6px rgba(88, 201, 38, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--lime-hover);
+    }
+
+    .btn-primary:disabled {
+      background: #D4D9D8;
+      color: #848E8C;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    .progress-wrap {
+      width: 100%;
+      height: 6px;
+      background: var(--bg-inner);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-top: 14px;
+      display: none;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--lime-accent), var(--cyan-tech));
+      transition: width 0.2s ease;
+    }
+
+    .status-text {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--slate-text);
+      text-align: center;
+      margin-top: 8px;
+      min-height: 18px;
+    }
+
+    .editor-wrapper {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 14px;
+    }
+
+    textarea {
+      width: 100%;
+      flex-grow: 1;
+      min-height: 270px;
+      background: var(--bg-inner);
+      border: 1.5px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 18px;
+      color: var(--charcoal);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.84rem;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: var(--cyan-tech);
+      background: #FFFFFF;
+    }
+
+    .token-dashboard {
+      background: var(--charcoal);
+      color: #E6E8E8;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .token-comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+
+    .token-stat {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 8px 6px;
+    }
+
+    .token-stat.savings {
+      background: rgba(88, 201, 38, 0.14);
+      border-color: rgba(88, 201, 38, 0.35);
+    }
+
+    .stat-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #A0A8A7;
+      margin-bottom: 3px;
+      font-weight: 600;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .stat-value.pdf-raw { color: #F87171; }
+    .stat-value.md-clean { color: var(--cyan-tech); }
+    .stat-value.saved-val { color: var(--lime-accent); }
+
+    .sub-metrics {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.74rem;
+      color: #9CA3AF;
+      font-family: 'JetBrains Mono', monospace;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 8px;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .btn-action {
+      background: var(--bg-inner);
+      color: var(--charcoal);
+      border: 1.5px solid var(--border-subtle);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.87rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-action:hover:not(:disabled) {
+      background: #E2E6E5;
+    }
+
+    .btn-action.download:not(:disabled) {
+      background: var(--charcoal);
+      border-color: var(--charcoal);
+      color: #FFFFFF;
+    }
+
+    .btn-action:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    @media (max-width: 880px) {
+      .bento-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .bento-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 20px 22px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .bento-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+    }
+
+    .bento-icon.lime { background: var(--lime-soft); color: #3D9417; }
+    .bento-icon.cyan { background: var(--cyan-soft); color: #0082AB; }
+    .bento-icon.dark { background: var(--charcoal); color: var(--lime-accent); }
+
+    .bento-card h3 {
+      font-size: 0.96rem;
+      font-weight: 800;
+      color: var(--charcoal);
+      margin-bottom: 4px;
+    }
+
+    .bento-card p {
+      font-size: 0.83rem;
+      color: var(--slate-text);
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="pill-badge">
+        <span class="pill-dot"></span>
+        IA Ready • Texto nativo + OCR inteligente
+      </div>
+      <h1>Convierte tus PDF a <span class="text-highlight">Markdown</span></h1>
+      <div class="accent-bar"></div>
+      <p class="subtitle">Extrae texto seleccionable y aplica reconocimiento óptico (OCR) a páginas escaneadas o imágenes para alimentar a ChatGPT, Claude y Gemini.</p>
+    </header>
+
+    <div class="workspace">
+      <div class="panel">
+        <div class="panel-top">
+          <div class="panel-title-group">
+            <h2>Documento origen</h2>
+            <p>Soporta PDF con texto o escaneados (máx. 15 MB)</p>
+          </div>
+          <span class="step-tag">01 / 02</span>
+        </div>
+
+        <div class="dropzone" id="dropzone">
+          <div class="icon-circle">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="dropzone-heading">Arrastra y suelta tu PDF aquí</div>
+          <div class="dropzone-hint">Detecta automáticamente si requiere OCR</div>
+          <button type="button" class="btn-browse" id="selectBtn">Seleccionar archivo</button>
+          <input type="file" id="fileInput" accept="application/pdf" hidden>
+        </div>
+
+        <div class="ocr-options">
+          <div class="ocr-label">
+            <span>👁️ Motor OCR</span>
+            <span class="ocr-badge">ES + EN</span>
+          </div>
+          <select id="ocrMode" class="ocr-select">
+            <option value="auto" selected>Automático (solo páginas sin texto)</option>
+            <option value="force">Forzar OCR en todas las páginas</option>
+            <option value="off">Desactivado (solo texto rápido)</option>
+          </select>
+        </div>
+
+        <div class="file-card" id="fileCard">
+          <div class="file-meta">
+            <span>📄</span>
+            <div>
+              <div class="file-name" id="fileName">documento.pdf</div>
+              <div class="file-size" id="fileSize">0.00 MB</div>
+            </div>
+          </div>
+          <button type="button" class="btn-remove" id="removeFileBtn" title="Quitar archivo">✕</button>
+        </div>
+
+        <button type="button" class="btn-primary" id="convertBtn" disabled>
+          <span>Convertir a Markdown</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </button>
+
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="status-text" id="statusText"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-top">
+          <div class="panel-title-group">
+            <h2>Resultado Markdown</h2>
+            <p>Previsualiza, edita, copia o descarga el resultado</p>
+          </div>
+          <span class="step-tag">02 / 02</span>
+        </div>
+
+        <div class="editor-wrapper">
+          <textarea id="outputArea" placeholder="# Tu documento aparecerá aquí...&#10;&#10;Si tu PDF contiene imágenes escaneadas, el motor OCR leerá el texto automáticamente y lo estructurará en Markdown limpio." readonly></textarea>
+        </div>
+
+        <div class="token-dashboard">
+          <div class="token-comparison-grid">
+            <div class="token-stat">
+              <div class="stat-label">PDF Directo</div>
+              <div class="stat-value pdf-raw" id="pdfTokensCount">~0</div>
+            </div>
+            <div class="token-stat">
+              <div class="stat-label">En Markdown</div>
+              <div class="stat-value md-clean" id="tokenCount">~0</div>
+            </div>
+            <div class="token-stat savings">
+              <div class="stat-label">Tokens Ahorrados</div>
+              <div class="stat-value saved-val" id="savedTokensCount">0 (0%)</div>
+            </div>
+          </div>
+          <div class="sub-metrics">
+            <span>Palabras: <strong style="color:#fff" id="wordCount">0</strong></span>
+            <span>Caracteres: <strong style="color:#fff" id="charCount">0</strong></span>
+            <span>Páginas: <strong style="color:#00C2FF" id="pagesCount">0</strong></span>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button type="button" class="btn-action" id="copyBtn" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            <span id="copyLabel">Copiar Markdown</span>
+          </button>
+
+          <button type="button" class="btn-action download" id="downloadBtn" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span>Descargar .md</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bento-grid">
+      <div class="bento-card">
+        <div class="bento-icon lime">⚡</div>
+        <div>
+          <h3>OCR Híbrido Inteligente</h3>
+          <p>Lee tanto PDF digitales como documentos escaneados o fotografías en PDF.</p>
+        </div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-icon cyan">🔒</div>
+        <div>
+          <h3>100% Privado en memoria</h3>
+          <p>El procesamiento de texto y OCR ocurre localmente sin subir archivos a servidores.</p>
+        </div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-icon dark">🧩</div>
+        <div>
+          <h3>Ahorro máximo de tokens</h3>
+          <p>Elimina el ruido visual y metadatos de PDF para reducir costos en tus prompts.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const selectBtn = document.getElementById('selectBtn');
+    const fileCard = document.getElementById('fileCard');
+    const fileNameEl = document.getElementById('fileName');
+    const fileSizeEl = document.getElementById('fileSize');
+    const removeFileBtn = document.getElementById('removeFileBtn');
+    const ocrModeSelect = document.getElementById('ocrMode');
+    const convertBtn = document.getElementById('convertBtn');
+    const progressWrap = document.getElementById('progressWrap');
+    const progressBar = document.getElementById('progressBar');
+    const statusText = document.getElementById('statusText');
+    const outputArea = document.getElementById('outputArea');
+    const copyBtn = document.getElementById('copyBtn');
+    const copyLabel = document.getElementById('copyLabel');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    const wordCountEl = document.getElementById('wordCount');
+    const charCountEl = document.getElementById('charCount');
+    const pagesCountEl = document.getElementById('pagesCount');
+    const pdfTokensCountEl = document.getElementById('pdfTokensCount');
+    const tokenCountEl = document.getElementById('tokenCount');
+    const savedTokensCountEl = document.getElementById('savedTokensCount');
+
+    let selectedFile = null;
+    let lastTotalPages = 0;
+    let lastOcrPages = 0;
+
+    selectBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      fileInput.click();
+    });
+
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    removeFileBtn.addEventListener('click', () => {
+      selectedFile = null;
+      fileInput.value = '';
+      fileCard.style.display = 'none';
+      convertBtn.disabled = true;
+      statusText.textContent = '';
+      progressWrap.style.display = 'none';
+    });
+
+    function handleFile(file) {
+      statusText.textContent = '';
+      if (file.type !== 'application/pdf') {
+        statusText.style.color = '#DC2626';
+        statusText.textContent = '⚠️ Por favor, selecciona un archivo PDF válido.';
+        return;
+      }
+      if (file.size > 15 * 1024 * 1024) {
+        statusText.style.color = '#DC2626';
+        statusText.textContent = '⚠️ El archivo supera el tamaño máximo de 15 MB.';
+        return;
+      }
+
+      selectedFile = file;
+      fileNameEl.textContent = file.name;
+      fileSizeEl.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+      fileCard.style.display = 'flex';
+      convertBtn.disabled = false;
+    }
+
+    function updateMetrics(text, totalPages = lastTotalPages, ocrPages = lastOcrPages) {
+      const clean = text.trim();
+      const words = clean ? clean.split(/\s+/).length : 0;
+      const chars = text.length;
+      const mdTokens = Math.ceil(chars / 4);
+
+      if (mdTokens === 0) {
+        wordCountEl.textContent = '0';
+        charCountEl.textContent = '0';
+        pagesCountEl.textContent = '0';
+        pdfTokensCountEl.textContent = '~0';
+        tokenCountEl.textContent = '~0';
+        savedTokensCountEl.textContent = '0 (0%)';
+        return;
+      }
+
+      const normalPages = Math.max(0, totalPages - ocrPages);
+      const estimatedPdfTokens = Math.round(
+        (mdTokens * 1.38) + (ocrPages * 1100) + (normalPages * 320)
+      );
+
+      const savedTokens = Math.max(0, estimatedPdfTokens - mdTokens);
+      const savedPercent = estimatedPdfTokens > 0
+        ? Math.round((savedTokens / estimatedPdfTokens) * 100)
+        : 0;
+
+      wordCountEl.textContent = words.toLocaleString();
+      charCountEl.textContent = chars.toLocaleString();
+      pagesCountEl.textContent = totalPages;
+
+      pdfTokensCountEl.textContent = `~${estimatedPdfTokens.toLocaleString()}`;
+      tokenCountEl.textContent = `~${mdTokens.toLocaleString()}`;
+      savedTokensCountEl.textContent = `-${savedTokens.toLocaleString()} (${savedPercent}%)`;
+    }
+
+    outputArea.addEventListener('input', () => updateMetrics(outputArea.value));
+
+    async function runOcrOnPage(page, worker) {
+      const viewport = page.getViewport({ scale: 2.0 });
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      await page.render({ canvasContext: context, viewport: viewport }).promise;
+      const { data: { text } } = await worker.recognize(canvas);
+
+      canvas.width = 0;
+      canvas.height = 0;
+
+      return text
+        .replace(/\r\n/g, '\n')
+        .replace(/([a-záéíóúñ,])\n([a-záéíóúñ])/gi, '$1 $2')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    }
+
+    convertBtn.addEventListener('click', async () => {
+      if (!selectedFile) return;
+
+      const ocrMode = ocrModeSelect.value;
+      convertBtn.disabled = true;
+      progressWrap.style.display = 'block';
+      progressBar.style.width = '5%';
+      statusText.style.color = '#3D9417';
+      statusText.textContent = 'Cargando documento PDF...';
+
+      let tesseractWorker = null;
+      let ocrPagesCount = 0;
+
+      try {
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+        if (pdf.numPages > 60) {
+          throw new Error('El documento excede el límite de 60 páginas.');
+        }
+
+        let markdownOutput = `# ${selectedFile.name.replace(/\.pdf$/i, '')}\n\n`;
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const basePercent = Math.round(((pageNum - 1) / pdf.numPages) * 100);
+          progressBar.style.width = `${Math.max(5, basePercent)}%`;
+          statusText.textContent = `Analizando página ${pageNum} de ${pdf.numPages}...`;
+
+          const page = await pdf.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          const items = textContent.items.filter(item => item.str.trim().length > 0);
+          const rawTextLength = items.map(i => i.str.trim()).join('').length;
+
+          const needsOcr = (ocrMode === 'force') || (ocrMode === 'auto' && rawTextLength < 25);
+
+          if (needsOcr) {
+            if (!tesseractWorker) {
+              statusText.textContent = `Iniciando motor OCR (español/inglés)...`;
+              tesseractWorker = await Tesseract.createWorker('spa+eng', 1, {
+                workerBlobURL: false
+              });
+            }
+            statusText.textContent = `Aplicando OCR en imagen (página ${pageNum} de ${pdf.numPages})...`;
+            const ocrText = await runOcrOnPage(page, tesseractWorker);
+            ocrPagesCount++;
+
+            const content = ocrText || '*(Página sin texto legible detectado)*';
+            markdownOutput += `<!-- Página ${pageNum} (OCR) -->\n${content}\n\n---\n\n`;
+          } else {
+            if (items.length === 0) {
+              markdownOutput += `<!-- Página ${pageNum} -->\n*(Página vacía)*\n\n---\n\n`;
+              continue;
+            }
+
+            const heights = items.map(i => Math.round(i.transform[0]));
+            const avgHeight = heights.reduce((a, b) => a + b, 0) / heights.length;
+
+            let lastY = null;
+            let pageLines = [];
+            let currentLine = '';
+
+            for (const item of items) {
+              const y = Math.round(item.transform[5]);
+              const fontSize = Math.round(item.transform[0]);
+              const text = item.str;
+
+              if (lastY !== null && Math.abs(y - lastY) > 6) {
+                pageLines.push(currentLine.trim());
+                currentLine = '';
+              }
+
+              if (currentLine === '' && fontSize >= avgHeight * 1.45) {
+                currentLine += `## ${text}`;
+              } else if (currentLine === '' && fontSize >= avgHeight * 1.2) {
+                currentLine += `### ${text}`;
+              } else {
+                currentLine += (currentLine.endsWith(' ') || text.startsWith(' ') ? '' : ' ') + text;
+              }
+
+              lastY = y;
+            }
+            if (currentLine.trim()) pageLines.push(currentLine.trim());
+
+            const formattedPage = pageLines
+              .map(line => line.replace(/^[•●▪-]\s*/, '- '))
+              .join('\n\n');
+
+            markdownOutput += `<!-- Página ${pageNum} -->\n${formattedPage}\n\n---\n\n`;
+          }
+        }
+
+        if (tesseractWorker) {
+          await tesseractWorker.terminate();
+        }
+
+        lastTotalPages = pdf.numPages;
+        lastOcrPages = ocrPagesCount;
+
+        progressBar.style.width = '100%';
+        const finalResult = markdownOutput.trim();
+        outputArea.value = finalResult;
+        outputArea.removeAttribute('readonly');
+        updateMetrics(finalResult, pdf.numPages, ocrPagesCount);
+
+        copyBtn.disabled = false;
+        downloadBtn.disabled = false;
+        const ocrNote = ocrPagesCount > 0 ? ` (${ocrPagesCount} con OCR)` : '';
+        statusText.textContent = `✓ ¡Completado! ${pdf.numPages} páginas procesadas${ocrNote}.`;
+
+      } catch (err) {
+        if (tesseractWorker) await tesseractWorker.terminate();
+        statusText.style.color = '#DC2626';
+        statusText.textContent = `⚠️ ${err.message || 'Ocurrió un error al leer el PDF.'}`;
+        progressWrap.style.display = 'none';
+      } finally {
+        convertBtn.disabled = false;
+      }
+    });
+
+    copyBtn.addEventListener('click', () => {
+      if (!outputArea.value) return;
+      navigator.clipboard.writeText(outputArea.value).then(() => {
+        copyLabel.textContent = '¡Copiado al portapapeles!';
+        setTimeout(() => copyLabel.textContent = 'Copiar Markdown', 2000);
+      });
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      if (!outputArea.value) return;
+      const blob = new Blob([outputArea.value], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = selectedFile ? selectedFile.name.replace(/\.pdf$/i, '.md') : 'documento.md';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
