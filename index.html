@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDF + OCR Determinista a Markdown — Optimizado para IA</title>
+  <title>PDF + OCR Determinista a Markdown</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- Solo PDF.js para leer las páginas; el OCR es 100% código determinista nativo -->
+  <!-- Solo PDF.js para decodificar el contenedor PDF; el OCR es 100% matemática determinista nativa -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     :root {
@@ -256,6 +256,7 @@
       font-size: 0.82rem;
       color: var(--charcoal);
       font-weight: 700;
+      white-space: nowrap;
     }
 
     .ocr-badge {
@@ -278,6 +279,7 @@
       font-weight: 600;
       outline: none;
       cursor: pointer;
+      max-width: 245px;
     }
 
     .file-card {
@@ -560,11 +562,11 @@
     <header>
       <div class="pill-badge">
         <span class="pill-dot"></span>
-        IA Ready • Texto nativo + OCR Determinista (0 MB extra)
+        100% Algorítmico • Sin Modelos Neuronales ni IA
       </div>
       <h1>Convierte tus PDF a <span class="text-highlight">Markdown</span></h1>
       <div class="accent-bar"></div>
-      <p class="subtitle">Extrae texto seleccionable y aplica reconocimiento óptico determinista por proyección de píxeles a páginas escaneadas para alimentar tus IA al instante.</p>
+      <p class="subtitle">Reconocimiento óptico determinista basado en umbralización de Otsu, proyección ortogonal de píxeles y correlación de matrices geométricas 16×24.</p>
     </header>
 
     <div class="workspace">
@@ -572,7 +574,7 @@
         <div class="panel-top">
           <div class="panel-title-group">
             <h2>Documento origen</h2>
-            <p>Soporta PDF con texto o escaneados (máx. 15 MB)</p>
+            <p>Soporta PDF escaneados o con texto digital (máx. 15 MB)</p>
           </div>
           <span class="step-tag">01 / 02</span>
         </div>
@@ -586,20 +588,21 @@
             </svg>
           </div>
           <div class="dropzone-heading">Arrastra y suelta tu PDF aquí</div>
-          <div class="dropzone-hint">Detecta automáticamente si requiere OCR</div>
+          <div class="dropzone-hint">Procesamiento local determinista en navegador</div>
           <button type="button" class="btn-browse" id="selectBtn">Seleccionar archivo</button>
           <input type="file" id="fileInput" accept="application/pdf" hidden>
         </div>
 
+        <!-- Selector de método de extracción (OCR Determinista predeterminado) -->
         <div class="ocr-options">
           <div class="ocr-label">
-            <span>📐 OCR Determinista</span>
-            <span class="ocr-badge">MATRIZ 16x24</span>
+            <span>📐 Método OCR</span>
+            <span class="ocr-badge">0% IA</span>
           </div>
           <select id="ocrMode" class="ocr-select">
-            <option value="auto" selected>Automático (solo páginas sin texto)</option>
-            <option value="force">Forzar OCR en todas las páginas</option>
-            <option value="off">Desactivado (solo texto nativo)</option>
+            <option value="deterministic" selected>OCR Determinista (todas las páginas)</option>
+            <option value="auto">Híbrido (texto nativo + OCR determinista)</option>
+            <option value="off">Solo texto nativo (sin OCR)</option>
           </select>
         </div>
 
@@ -637,7 +640,7 @@
         </div>
 
         <div class="editor-wrapper">
-          <textarea id="outputArea" placeholder="# Tu documento aparecerá aquí...&#10;&#10;El motor determinista segmenta líneas, glifos y correlaciona matrices de píxeles sin descargar redes neuronales." readonly></textarea>
+          <textarea id="outputArea" placeholder="# Tu documento aparecerá aquí...&#10;&#10;El motor determinista segmenta renglones, aísla glifos y compara matrices binarias 16x24 sin utilizar redes neuronales ni modelos de inteligencia artificial." readonly></textarea>
         </div>
 
         <div class="token-dashboard">
@@ -684,16 +687,16 @@
       <div class="bento-card">
         <div class="bento-icon lime">⚡</div>
         <div>
-          <h3>Algoritmo 100% Determinista</h3>
-          <p>Sin modelos pesados ni latencia: binarización Otsu, segmentación y correlación exacta.</p>
+          <h3>100% Código Determinista</h3>
+          <p>Matemática pura: binarización Otsu, segmentación ortogonal y correlación coseno.</p>
         </div>
       </div>
 
       <div class="bento-card">
         <div class="bento-icon cyan">🔒</div>
         <div>
-          <h3>Cero dependencias de IA</h3>
-          <p>Todo el reconocimiento geométrico se ejecuta localmente en milisegundos.</p>
+          <h3>Cero Modelos de IA</h3>
+          <p>Sin pesos neuronales, sin redes LSTM y sin descargas externas pesadas.</p>
         </div>
       </div>
 
@@ -701,7 +704,7 @@
         <div class="bento-icon dark">🧩</div>
         <div>
           <h3>Ahorro máximo de tokens</h3>
-          <p>Elimina el ruido visual y metadatos de PDF para reducir costos en tus prompts.</p>
+          <p>Convierte documentos pesados en texto Markdown limpio y ligero al instante.</p>
         </div>
       </div>
     </div>
@@ -712,11 +715,10 @@
 
     /**
      * =========================================================================
-     * MOTOR OCR 100% DETERMINISTA EN JAVASCRIPT PURO
-     * 1. Binarización adaptativa por umbral de Otsu
-     * 2. Segmentación horizontal por proyección de píxeles (detección de renglones)
-     * 3. Segmentación vertical por columnas (aislamiento de glifos y espacios)
-     * 4. Normalización geométrica a matriz fija 16x24 + Coeficiente de Pearson/Hamming
+     * MOTOR OCR 100% DETERMINISTA EN JAVASCRIPT PURO (SIN INTELIGENCIA ARTIFICIAL)
+     * - Binarización por varianza entre clases de Otsu
+     * - Segmentación horizontal y vertical por proyección de histogramas
+     * - Normalización geométrica a matriz 16x24 y producto punto normalizado
      * =========================================================================
      */
     class DeterministicOCR {
@@ -733,7 +735,6 @@
         this.buildTemplates();
       }
 
-      // Genera determinísticamente las matrices binarias normalizadas de referencia
       buildTemplates() {
         const canvas = document.createElement('canvas');
         canvas.width = 64;
@@ -756,14 +757,13 @@
             if (box) {
               const matrix = this.extractNormalizedMatrix(binary, 64, box);
               const aspect = box.w / Math.max(1, box.h);
-              const baselinePos = (box.y - 10) / 36; // Posición relativa vertical
+              const baselinePos = (box.y - 10) / 36;
               this.templates.push({ char, matrix, aspect, baselinePos });
             }
           }
         }
       }
 
-      // Cálculo determinista del umbral óptimo de Otsu
       computeOtsuThreshold(grayPixels) {
         const hist = new Uint32Array(256);
         for (let i = 0; i < grayPixels.length; i++) {
@@ -798,7 +798,6 @@
         return threshold;
       }
 
-      // Convierte RGBA a matriz binaria (1 = tinta oscura, 0 = fondo claro)
       binarize(rgba, width, height, fixedThreshold = null) {
         const len = width * height;
         const gray = new Uint8Array(len);
@@ -813,7 +812,6 @@
         return binary;
       }
 
-      // Encuentra el rectángulo mínimo que encierra los píxeles activos en una región
       findBoundingBox(binary, stride, maxH, x0, y0, x1, y1) {
         let minX = x1, minY = y1, maxX = x0 - 1, maxY = y0 - 1;
         for (let y = y0; y < y1; y++) {
@@ -831,7 +829,6 @@
         return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
       }
 
-      // Escala determinísticamente un recorte a la rejilla estándar 16x24
       extractNormalizedMatrix(binary, stride, box) {
         const size = this.GRID_W * this.GRID_H;
         const out = new Float32Array(size);
@@ -857,9 +854,8 @@
         return out;
       }
 
-      // Compara dos matrices usando similitud coseno determinista + penalización geométrica
-      matchGlyph(matrix, aspect, relY, lineHeight) {
-        let bestChar = '?';
+      matchGlyph(matrix, aspect, relY) {
+        let bestChar = '';
         let bestScore = -Infinity;
 
         let normA = 0;
@@ -868,7 +864,6 @@
 
         for (let t = 0; t < this.templates.length; t++) {
           const tpl = this.templates[t];
-          // Filtro rápido por relación de aspecto
           if (Math.abs(aspect - tpl.aspect) > 0.65) continue;
 
           let dot = 0;
@@ -878,8 +873,6 @@
             normB += tpl.matrix[i] * tpl.matrix[i];
           }
           const cosine = dot / (normA * (Math.sqrt(normB) || 1));
-
-          // Penalización por diferencia de proporción y posición vertical (ej. '.' vs '•' o ',' vs "'")
           const aspectPenalty = Math.abs(aspect - tpl.aspect) * 0.18;
           const posPenalty = Math.abs(relY - tpl.baselinePos) * 0.12;
           const score = cosine - aspectPenalty - posPenalty;
@@ -892,7 +885,6 @@
         return bestScore > 0.42 ? bestChar : '';
       }
 
-      // Reconoce todo el texto de un Canvas HTML
       recognizeCanvas(canvas) {
         const w = canvas.width;
         const h = canvas.height;
@@ -900,7 +892,6 @@
         const imgData = ctx.getImageData(0, 0, w, h);
         const binary = this.binarize(imgData.data, w, h);
 
-        // 1. Proyección horizontal para detectar renglones
         const rowSums = new Uint32Array(h);
         for (let y = 0; y < h; y++) {
           let sum = 0;
@@ -928,7 +919,6 @@
         const outputParagraphs = [];
         let prevLineBottom = null;
 
-        // 2. Para cada renglón, proyectar verticalmente y aislar glifos
         for (const line of lines) {
           const colSums = new Uint32Array(w);
           for (let x = 0; x < w; x++) {
@@ -958,7 +948,6 @@
 
           if (glyphs.length === 0) continue;
 
-          // Calcular ancho promedio de glifo para detectar espacios entre palabras
           const avgGlyphW = glyphs.reduce((acc, g) => acc + g.w, 0) / glyphs.length;
           const spaceThreshold = Math.max(4, avgGlyphW * 0.52);
 
@@ -974,13 +963,12 @@
             const matrix = this.extractNormalizedMatrix(binary, w, g);
             const aspect = g.w / Math.max(1, g.h);
             const relY = (g.y - line.y0) / Math.max(1, line.h);
-            lineText += this.matchGlyph(matrix, aspect, relY, line.h);
+            lineText += this.matchGlyph(matrix, aspect, relY);
           }
 
           const cleanLine = lineText.trim();
           if (!cleanLine) continue;
 
-          // Detectar separación de párrafo o encabezado por altura de línea
           if (prevLineBottom !== null && (line.y0 - prevLineBottom) > line.h * 0.85) {
             outputParagraphs.push('\n' + cleanLine);
           } else {
@@ -993,11 +981,10 @@
       }
     }
 
-    // Instanciar motor OCR determinista una sola vez (toma < 15ms)
     const deterministicOcr = new DeterministicOCR();
 
     // =========================================================================
-    // LÓGICA DE INTERFAZ Y PROCESAMIENTO PDF
+    // INTERFAZ Y EXTRACCIÓN DE PDF
     // =========================================================================
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
@@ -1160,7 +1147,6 @@
           progressBar.style.width = `${Math.max(5, basePercent)}%`;
           statusText.textContent = `Procesando página ${pageNum} de ${pdf.numPages}...`;
 
-          // Ceder un frame al navegador para actualizar la barra de progreso
           await new Promise(r => setTimeout(r, 0));
 
           const page = await pdf.getPage(pageNum);
@@ -1168,7 +1154,7 @@
           const items = textContent.items.filter(item => item.str.trim().length > 0);
           const rawTextLength = items.map(i => i.str.trim()).join('').length;
 
-          const needsOcr = (ocrMode === 'force') || (ocrMode === 'auto' && rawTextLength < 25);
+          const needsOcr = (ocrMode === 'deterministic') || (ocrMode === 'auto' && rawTextLength < 25);
 
           if (needsOcr) {
             statusText.textContent = `Ejecutando OCR determinista en página ${pageNum} de ${pdf.numPages}...`;
