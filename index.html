@@ -3,124 +3,154 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDF + OCR Determinista a Markdown</title>
+  <title>SYS://PDF_TO_MD // OCR DETERMINISTA</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- Solo PDF.js para decodificar el contenedor PDF; el OCR es 100% matemática determinista nativa -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     :root {
-      --bg-base: #E6E8E8;
-      --bg-surface: #FFFFFF;
-      --bg-inner: #F4F6F6;
-      --border-subtle: #D4D9D8;
-      --charcoal: #222625;
-      --charcoal-hover: #141716;
-      --slate-text: #5C6463;
-      --slate-muted: #848E8C;
-      --lime-accent: #58C926;
-      --lime-hover: #4AB01E;
-      --lime-soft: rgba(88, 201, 38, 0.12);
-      --cyan-tech: #00C2FF;
-      --cyan-soft: rgba(0, 194, 255, 0.12);
+      --bg-void: #040705;
+      --bg-panel: rgba(8, 15, 11, 0.92);
+      --bg-terminal: #020503;
+      --border-dim: #12381E;
+      --matrix-green: #00FF41;
+      --matrix-dark: #008F11;
+      --matrix-glow: rgba(0, 255, 65, 0.28);
+      --cyber-cyan: #00F3FF;
+      --cyber-cyan-glow: rgba(0, 243, 255, 0.25);
+      --danger-red: #FF2A55;
+      --text-main: #D6FFE0;
+      --text-muted: #5A8F69;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'JetBrains Mono', monospace;
     }
 
     body {
-      background-color: var(--bg-base);
-      color: var(--charcoal);
+      background-color: var(--bg-void);
+      color: var(--text-main);
       min-height: 100vh;
-      padding: 40px 20px;
+      padding: 36px 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
       position: relative;
       overflow-x: hidden;
-      background-image: 
-        radial-gradient(circle at 88% 12%, rgba(0, 194, 255, 0.15) 0%, transparent 38%),
-        radial-gradient(circle at 12% 85%, rgba(88, 201, 38, 0.13) 0%, transparent 40%);
     }
 
-    body::before {
+    /* Fondo animado Matrix */
+    #matrixBg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      opacity: 0.22;
+      pointer-events: none;
+    }
+
+    /* Efecto sutil de líneas de monitor CRT */
+    body::after {
       content: "";
       position: fixed;
       inset: 0;
-      background-image: linear-gradient(rgba(34, 38, 37, 0.035) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(34, 38, 37, 0.035) 1px, transparent 1px);
-      background-size: 40px 40px;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.18) 0px,
+        rgba(0, 0, 0, 0.18) 1px,
+        transparent 1px,
+        transparent 3px
+      );
       pointer-events: none;
-      z-index: -1;
+      z-index: 999;
     }
 
     .container {
       width: 100%;
-      max-width: 1160px;
+      max-width: 1180px;
+      position: relative;
+      z-index: 1;
     }
 
+    /* Header estilo consola */
     header {
       text-align: center;
-      margin-bottom: 40px;
+      margin-bottom: 36px;
+      border-bottom: 1px solid var(--border-dim);
+      padding-bottom: 28px;
     }
 
     .pill-badge {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      color: var(--charcoal);
-      padding: 6px 15px;
-      border-radius: 999px;
-      font-size: 0.8rem;
+      gap: 10px;
+      background: rgba(0, 255, 65, 0.08);
+      border: 1px solid var(--matrix-green);
+      color: var(--matrix-green);
+      padding: 6px 16px;
+      font-size: 0.78rem;
       font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       margin-bottom: 18px;
-      box-shadow: 0 4px 12px rgba(34, 38, 37, 0.05);
+      box-shadow: 0 0 15px var(--matrix-glow);
     }
 
     .pill-dot {
       width: 8px;
       height: 8px;
-      border-radius: 50%;
-      background: var(--lime-accent);
-      box-shadow: 0 0 8px rgba(88, 201, 38, 0.6);
+      background: var(--matrix-green);
+      box-shadow: 0 0 10px var(--matrix-green);
+      animation: blink 1.2s infinite;
+    }
+
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0.2; }
     }
 
     h1 {
-      font-size: clamp(2.2rem, 4.5vw, 3.5rem);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1.08;
-      margin-bottom: 16px;
-      color: var(--charcoal);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(2.1rem, 4.5vw, 3.6rem);
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+      margin-bottom: 14px;
+      color: #FFFFFF;
+      text-shadow: 0 0 18px rgba(0, 255, 65, 0.45);
     }
 
     .text-highlight {
-      color: var(--lime-accent);
+      color: var(--matrix-green);
+      text-shadow: 0 0 22px var(--matrix-green);
     }
 
     .accent-bar {
-      width: 64px;
-      height: 5px;
-      background: linear-gradient(90deg, var(--lime-accent) 0%, var(--cyan-tech) 100%);
-      border-radius: 99px;
-      margin: 0 auto 18px auto;
+      width: 140px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--matrix-green), var(--cyber-cyan), transparent);
+      margin: 0 auto 16px auto;
     }
 
     .subtitle {
-      color: var(--slate-text);
-      font-size: 1.05rem;
-      max-width: 640px;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      max-width: 680px;
       margin: 0 auto;
       line-height: 1.6;
     }
 
+    .subtitle::before {
+      content: "> ";
+      color: var(--cyber-cyan);
+    }
+
+    /* Workspace Grid */
     .workspace {
       display: grid;
       grid-template-columns: 1fr 1.15fr;
@@ -134,53 +164,82 @@
       }
     }
 
+    /* Paneles Cyberpunk */
     .panel {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 22px;
-      padding: 28px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      padding: 26px;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 18px 36px -14px rgba(34, 38, 37, 0.08);
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 255, 65, 0.03);
+      backdrop-filter: blur(6px);
+    }
+
+    /* Esquinas recortadas / detalles tácticos */
+    .panel::before {
+      content: "";
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 18px;
+      height: 18px;
+      border-top: 2px solid var(--matrix-green);
+      border-left: 2px solid var(--matrix-green);
+    }
+
+    .panel::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 18px;
+      height: 18px;
+      border-bottom: 2px solid var(--cyber-cyan);
+      border-right: 2px solid var(--cyber-cyan);
     }
 
     .panel-top {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       margin-bottom: 18px;
+      border-bottom: 1px dashed var(--border-dim);
+      padding-bottom: 12px;
     }
 
     .panel-title-group h2 {
-      font-size: 1.15rem;
-      font-weight: 800;
-      color: var(--charcoal);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--matrix-green);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
     }
 
     .panel-title-group p {
-      font-size: 0.84rem;
-      color: var(--slate-text);
+      font-size: 0.78rem;
+      color: var(--text-muted);
       margin-top: 4px;
     }
 
     .step-tag {
-      background: var(--charcoal);
-      color: #FFFFFF;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.74rem;
-      font-weight: 600;
-      padding: 5px 11px;
-      border-radius: 8px;
+      background: rgba(0, 243, 255, 0.1);
+      border: 1px solid var(--cyber-cyan);
+      color: var(--cyber-cyan);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      letter-spacing: 0.05em;
     }
 
+    /* Dropzone */
     .dropzone {
-      background: var(--bg-inner);
-      border: 2px dashed #C2C9C8;
-      border-radius: 16px;
-      padding: 34px 20px;
+      background: var(--bg-terminal);
+      border: 1px dashed var(--matrix-dark);
+      padding: 32px 20px;
       text-align: center;
       cursor: pointer;
-      transition: all 0.25s ease;
+      transition: all 0.2s ease;
       flex-grow: 1;
       display: flex;
       flex-direction: column;
@@ -190,60 +249,65 @@
     }
 
     .dropzone:hover, .dropzone.dragover {
-      border-color: var(--lime-accent);
-      background: rgba(88, 201, 38, 0.05);
+      border-color: var(--matrix-green);
+      background: rgba(0, 255, 65, 0.05);
+      box-shadow: inset 0 0 24px rgba(0, 255, 65, 0.12);
     }
 
     .icon-circle {
       width: 54px;
       height: 54px;
-      border-radius: 16px;
-      background: var(--charcoal);
+      border: 1px solid var(--matrix-green);
+      background: rgba(0, 255, 65, 0.08);
       display: flex;
       align-items: center;
       justify-content: center;
       margin-bottom: 14px;
-      color: var(--lime-accent);
-      box-shadow: 0 8px 16px rgba(34, 38, 37, 0.15);
+      color: var(--matrix-green);
+      box-shadow: 0 0 15px var(--matrix-glow);
     }
 
     .dropzone-heading {
       font-weight: 700;
-      font-size: 1rem;
-      color: var(--charcoal);
-      margin-bottom: 5px;
+      font-size: 0.95rem;
+      color: #FFFFFF;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
     .dropzone-hint {
-      font-size: 0.83rem;
-      color: var(--slate-text);
+      font-size: 0.78rem;
+      color: var(--text-muted);
       margin-bottom: 16px;
     }
 
     .btn-browse {
-      background: var(--bg-surface);
-      color: var(--charcoal);
-      border: 1.5px solid var(--border-subtle);
-      padding: 9px 18px;
-      border-radius: 10px;
-      font-size: 0.86rem;
+      background: transparent;
+      color: var(--matrix-green);
+      border: 1px solid var(--matrix-green);
+      padding: 8px 18px;
+      font-size: 0.8rem;
       font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
       cursor: pointer;
+      transition: all 0.2s;
     }
 
     .btn-browse:hover {
-      border-color: var(--charcoal);
-      background: var(--charcoal);
-      color: #FFFFFF;
+      background: var(--matrix-green);
+      color: #020503;
+      box-shadow: 0 0 16px var(--matrix-glow);
     }
 
+    /* Selector OCR */
     .ocr-options {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: var(--bg-inner);
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
+      background: var(--bg-terminal);
+      border: 1px solid var(--border-dim);
       padding: 10px 14px;
       margin-bottom: 16px;
       gap: 10px;
@@ -253,44 +317,46 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.82rem;
-      color: var(--charcoal);
+      font-size: 0.78rem;
+      color: var(--text-main);
       font-weight: 700;
       white-space: nowrap;
     }
 
     .ocr-badge {
-      background: var(--cyan-soft);
-      color: #0082AB;
-      font-size: 0.7rem;
+      background: rgba(0, 243, 255, 0.12);
+      border: 1px solid var(--cyber-cyan);
+      color: var(--cyber-cyan);
+      font-size: 0.68rem;
       font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 6px;
-      font-family: 'JetBrains Mono', monospace;
+      padding: 2px 6px;
     }
 
     select.ocr-select {
-      background: var(--bg-surface);
-      color: var(--charcoal);
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
+      background: #07120B;
+      color: var(--matrix-green);
+      border: 1px solid var(--matrix-dark);
       padding: 6px 10px;
-      font-size: 0.8rem;
+      font-size: 0.76rem;
       font-weight: 600;
       outline: none;
       cursor: pointer;
       max-width: 245px;
     }
 
+    select.ocr-select:focus {
+      border-color: var(--matrix-green);
+    }
+
+    /* Archivo cargado */
     .file-card {
       display: none;
       align-items: center;
       justify-content: space-between;
       width: 100%;
-      background: var(--lime-soft);
-      border: 1px solid rgba(88, 201, 38, 0.4);
-      border-radius: 12px;
-      padding: 11px 14px;
+      background: rgba(0, 255, 65, 0.08);
+      border: 1px solid var(--matrix-green);
+      padding: 10px 14px;
       margin-bottom: 14px;
     }
 
@@ -302,9 +368,9 @@
     }
 
     .file-name {
-      font-size: 0.86rem;
+      font-size: 0.82rem;
       font-weight: 700;
-      color: var(--charcoal);
+      color: #FFFFFF;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -312,55 +378,59 @@
     }
 
     .file-size {
-      font-size: 0.74rem;
-      color: #3D9417;
-      font-weight: 600;
-      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--matrix-green);
     }
 
     .btn-remove {
       background: none;
       border: none;
-      color: var(--slate-text);
+      color: var(--danger-red);
       cursor: pointer;
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: 700;
       padding: 4px;
     }
 
+    /* Botón Principal */
     .btn-primary {
       width: 100%;
       padding: 14px 20px;
-      border-radius: 12px;
-      border: none;
-      font-weight: 700;
-      font-size: 0.95rem;
+      border: 1px solid var(--matrix-green);
+      font-weight: 800;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
       cursor: pointer;
-      color: #FFFFFF;
-      background: var(--lime-accent);
-      box-shadow: 0 8px 20px -6px rgba(88, 201, 38, 0.55);
+      color: #020503;
+      background: var(--matrix-green);
+      box-shadow: 0 0 20px var(--matrix-glow);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
+      transition: all 0.2s;
     }
 
     .btn-primary:hover:not(:disabled) {
-      background: var(--lime-hover);
+      background: #39FF6A;
+      box-shadow: 0 0 28px rgba(0, 255, 65, 0.55);
     }
 
     .btn-primary:disabled {
-      background: #D4D9D8;
-      color: #848E8C;
+      background: #0B1910;
+      border-color: #163320;
+      color: #2D5A3C;
       box-shadow: none;
       cursor: not-allowed;
     }
 
+    /* Barra de progreso */
     .progress-wrap {
       width: 100%;
       height: 6px;
-      background: var(--bg-inner);
-      border-radius: 99px;
+      background: var(--bg-terminal);
+      border: 1px solid var(--border-dim);
       overflow: hidden;
       margin-top: 14px;
       display: none;
@@ -369,19 +439,21 @@
     .progress-bar {
       height: 100%;
       width: 0%;
-      background: linear-gradient(90deg, var(--lime-accent), var(--cyan-tech));
+      background: linear-gradient(90deg, var(--matrix-dark), var(--matrix-green), var(--cyber-cyan));
+      box-shadow: 0 0 10px var(--matrix-green);
       transition: width 0.2s ease;
     }
 
     .status-text {
-      font-size: 0.8rem;
+      font-size: 0.76rem;
       font-weight: 600;
-      color: var(--slate-text);
+      color: var(--matrix-green);
       text-align: center;
       margin-top: 8px;
       min-height: 18px;
     }
 
+    /* Editor Terminal */
     .editor-wrapper {
       flex-grow: 1;
       display: flex;
@@ -393,28 +465,30 @@
       width: 100%;
       flex-grow: 1;
       min-height: 270px;
-      background: var(--bg-inner);
-      border: 1.5px solid var(--border-subtle);
-      border-radius: 16px;
-      padding: 18px;
-      color: var(--charcoal);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.84rem;
+      background: var(--bg-terminal);
+      border: 1px solid var(--border-dim);
+      padding: 16px;
+      color: var(--matrix-green);
+      font-size: 0.82rem;
       line-height: 1.6;
       resize: vertical;
       outline: none;
     }
 
     textarea:focus {
-      border-color: var(--cyan-tech);
-      background: #FFFFFF;
+      border-color: var(--cyber-cyan);
+      box-shadow: inset 0 0 15px rgba(0, 243, 255, 0.08);
     }
 
+    textarea::placeholder {
+      color: #2A5438;
+    }
+
+    /* Dashboard de Tokens */
     .token-dashboard {
-      background: var(--charcoal);
-      color: #E6E8E8;
-      border-radius: 14px;
-      padding: 14px 16px;
+      background: var(--bg-terminal);
+      border: 1px solid var(--border-dim);
+      padding: 12px 14px;
       margin-bottom: 14px;
       display: flex;
       flex-direction: column;
@@ -429,46 +503,46 @@
     }
 
     .token-stat {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 10px;
+      background: rgba(0, 255, 65, 0.03);
+      border: 1px solid var(--border-dim);
       padding: 8px 6px;
     }
 
     .token-stat.savings {
-      background: rgba(88, 201, 38, 0.14);
-      border-color: rgba(88, 201, 38, 0.35);
+      background: rgba(0, 255, 65, 0.09);
+      border-color: var(--matrix-green);
     }
 
     .stat-label {
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: #A0A8A7;
-      margin-bottom: 3px;
-      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
     }
 
     .stat-value {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 700;
     }
 
-    .stat-value.pdf-raw { color: #F87171; }
-    .stat-value.md-clean { color: var(--cyan-tech); }
-    .stat-value.saved-val { color: var(--lime-accent); }
+    .stat-value.pdf-raw { color: var(--danger-red); }
+    .stat-value.md-clean { color: var(--cyber-cyan); }
+    .stat-value.saved-val {
+      color: var(--matrix-green);
+      text-shadow: 0 0 8px var(--matrix-glow);
+    }
 
     .sub-metrics {
       display: flex;
       justify-content: space-between;
-      font-size: 0.74rem;
-      color: #9CA3AF;
-      font-family: 'JetBrains Mono', monospace;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      border-top: 1px dashed var(--border-dim);
       padding-top: 8px;
     }
 
+    /* Botones de acción */
     .action-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -476,35 +550,45 @@
     }
 
     .btn-action {
-      background: var(--bg-inner);
-      color: var(--charcoal);
-      border: 1.5px solid var(--border-subtle);
-      padding: 12px 16px;
-      border-radius: 12px;
+      background: var(--bg-terminal);
+      color: var(--cyber-cyan);
+      border: 1px solid var(--cyber-cyan);
+      padding: 11px 16px;
       font-weight: 700;
-      font-size: 0.87rem;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
+      transition: all 0.2s;
     }
 
     .btn-action:hover:not(:disabled) {
-      background: #E2E6E5;
+      background: rgba(0, 243, 255, 0.14);
+      box-shadow: 0 0 15px var(--cyber-cyan-glow);
     }
 
     .btn-action.download:not(:disabled) {
-      background: var(--charcoal);
-      border-color: var(--charcoal);
-      color: #FFFFFF;
+      background: rgba(0, 255, 65, 0.12);
+      border-color: var(--matrix-green);
+      color: var(--matrix-green);
+    }
+
+    .btn-action.download:hover:not(:disabled) {
+      background: var(--matrix-green);
+      color: #020503;
+      box-shadow: 0 0 18px var(--matrix-glow);
     }
 
     .btn-action:disabled {
-      opacity: 0.45;
+      opacity: 0.3;
       cursor: not-allowed;
     }
 
+    /* Tarjetas inferiores */
     .bento-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -518,85 +602,94 @@
     }
 
     .bento-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 18px;
-      padding: 20px 22px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      padding: 18px 20px;
       display: flex;
       align-items: flex-start;
       gap: 14px;
     }
 
     .bento-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--matrix-green);
+      background: rgba(0, 255, 65, 0.08);
+      color: var(--matrix-green);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       flex-shrink: 0;
     }
 
-    .bento-icon.lime { background: var(--lime-soft); color: #3D9417; }
-    .bento-icon.cyan { background: var(--cyan-soft); color: #0082AB; }
-    .bento-icon.dark { background: var(--charcoal); color: var(--lime-accent); }
+    .bento-icon.cyan {
+      border-color: var(--cyber-cyan);
+      background: rgba(0, 243, 255, 0.08);
+      color: var(--cyber-cyan);
+    }
 
     .bento-card h3 {
-      font-size: 0.96rem;
-      font-weight: 800;
-      color: var(--charcoal);
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
       margin-bottom: 4px;
     }
 
     .bento-card p {
-      font-size: 0.83rem;
-      color: var(--slate-text);
+      font-size: 0.78rem;
+      color: var(--text-muted);
       line-height: 1.45;
     }
   </style>
 </head>
 <body>
 
+  <!-- Lluvia Matrix en Canvas -->
+  <canvas id="matrixBg"></canvas>
+
   <div class="container">
     <header>
       <div class="pill-badge">
         <span class="pill-dot"></span>
-        100% Algorítmico • Sin Modelos Neuronales ni IA
+        [SYS.ONLINE // MOTOR DETERMINISTA 0% IA]
       </div>
-      <h1>Convierte tus PDF a <span class="text-highlight">Markdown</span></h1>
+      <h1>PDF_TO_<span class="text-highlight">MARKDOWN</span>.EXE</h1>
       <div class="accent-bar"></div>
-      <p class="subtitle">Reconocimiento óptico determinista basado en umbralización de Otsu, proyección ortogonal de píxeles y correlación de matrices geométricas 16×24.</p>
+      <p class="subtitle">Decodificación binaria Otsu, proyección ortogonal de histogramas y correlación matricial 16×24 en ejecución local.</p>
     </header>
 
     <div class="workspace">
+      <!-- Panel Izquierdo -->
       <div class="panel">
         <div class="panel-top">
           <div class="panel-title-group">
-            <h2>Documento origen</h2>
-            <p>Soporta PDF escaneados o con texto digital (máx. 15 MB)</p>
+            <h2>// 01. INPUT_STREAM</h2>
+            <p>Carga archivo PDF escaneado o digital (MAX: 15 MB)</p>
           </div>
-          <span class="step-tag">01 / 02</span>
+          <span class="step-tag">NODE_01</span>
         </div>
 
         <div class="dropzone" id="dropzone">
           <div class="icon-circle">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square">
+              <path d="M21 15v4H3v-4"/>
               <polyline points="17 8 12 3 7 8"/>
               <line x1="12" y1="3" x2="12" y2="15"/>
             </svg>
           </div>
-          <div class="dropzone-heading">Arrastra y suelta tu PDF aquí</div>
-          <div class="dropzone-hint">Procesamiento local determinista en navegador</div>
-          <button type="button" class="btn-browse" id="selectBtn">Seleccionar archivo</button>
+          <div class="dropzone-heading">[ INYECTAR ARCHIVO PDF ]</div>
+          <div class="dropzone-hint">Arrastra el binario aquí o explora tu sistema</div>
+          <button type="button" class="btn-browse" id="selectBtn">&gt; EXPLORAR_DISCO</button>
           <input type="file" id="fileInput" accept="application/pdf" hidden>
         </div>
 
-        <!-- Selector de método de extracción (OCR Determinista predeterminado) -->
+        <!-- Selector OCR Determinista predeterminado -->
         <div class="ocr-options">
           <div class="ocr-label">
-            <span>📐 Método OCR</span>
+            <span>[MODO_OCR]</span>
             <span class="ocr-badge">0% IA</span>
           </div>
           <select id="ocrMode" class="ocr-select">
@@ -608,20 +701,17 @@
 
         <div class="file-card" id="fileCard">
           <div class="file-meta">
-            <span>📄</span>
+            <span style="color:var(--matrix-green)">[PDF]</span>
             <div>
               <div class="file-name" id="fileName">documento.pdf</div>
               <div class="file-size" id="fileSize">0.00 MB</div>
             </div>
           </div>
-          <button type="button" class="btn-remove" id="removeFileBtn" title="Quitar archivo">✕</button>
+          <button type="button" class="btn-remove" id="removeFileBtn" title="Abortar archivo">[X]</button>
         </div>
 
         <button type="button" class="btn-primary" id="convertBtn" disabled>
-          <span>Convertir a Markdown</span>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-          </svg>
+          <span>&gt; EJECUTAR_CONVERSION</span>
         </button>
 
         <div class="progress-wrap" id="progressWrap">
@@ -630,54 +720,49 @@
         <div class="status-text" id="statusText"></div>
       </div>
 
+      <!-- Panel Derecho -->
       <div class="panel">
         <div class="panel-top">
           <div class="panel-title-group">
-            <h2>Resultado Markdown</h2>
-            <p>Previsualiza, edita, copia o descarga el resultado</p>
+            <h2>// 02. OUTPUT_BUFFER</h2>
+            <p>Salida en formato Markdown limpio listo para extraer</p>
           </div>
-          <span class="step-tag">02 / 02</span>
+          <span class="step-tag">NODE_02</span>
         </div>
 
         <div class="editor-wrapper">
-          <textarea id="outputArea" placeholder="# Tu documento aparecerá aquí...&#10;&#10;El motor determinista segmenta renglones, aísla glifos y compara matrices binarias 16x24 sin utilizar redes neuronales ni modelos de inteligencia artificial." readonly></textarea>
+          <textarea id="outputArea" placeholder="// Esperando flujo de entrada...&#10;// El motor determinista binarizará cada página, segmentará glifos y reconstruirá la estructura en Markdown puro." readonly></textarea>
         </div>
 
         <div class="token-dashboard">
           <div class="token-comparison-grid">
             <div class="token-stat">
-              <div class="stat-label">PDF Directo</div>
+              <div class="stat-label">PDF_RAW_TOKENS</div>
               <div class="stat-value pdf-raw" id="pdfTokensCount">~0</div>
             </div>
             <div class="token-stat">
-              <div class="stat-label">En Markdown</div>
+              <div class="stat-label">MD_CLEAN_TOKENS</div>
               <div class="stat-value md-clean" id="tokenCount">~0</div>
             </div>
             <div class="token-stat savings">
-              <div class="stat-label">Tokens Ahorrados</div>
+              <div class="stat-label">TOKENS_AHORRADOS</div>
               <div class="stat-value saved-val" id="savedTokensCount">0 (0%)</div>
             </div>
           </div>
           <div class="sub-metrics">
-            <span>Palabras: <strong style="color:#fff" id="wordCount">0</strong></span>
-            <span>Caracteres: <strong style="color:#fff" id="charCount">0</strong></span>
-            <span>Páginas: <strong style="color:#00C2FF" id="pagesCount">0</strong></span>
+            <span>WORDS: <strong style="color:#fff" id="wordCount">0</strong></span>
+            <span>CHARS: <strong style="color:#fff" id="charCount">0</strong></span>
+            <span>PAGES: <strong style="color:var(--cyber-cyan)" id="pagesCount">0</strong></span>
           </div>
         </div>
 
         <div class="action-row">
           <button type="button" class="btn-action" id="copyBtn" disabled>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            <span id="copyLabel">Copiar Markdown</span>
+            <span id="copyLabel">[ COPIAR_BUFFER ]</span>
           </button>
 
           <button type="button" class="btn-action download" id="downloadBtn" disabled>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            <span>Descargar .md</span>
+            <span>[ DESCARGAR_.MD ]</span>
           </button>
         </div>
       </div>
@@ -685,42 +770,74 @@
 
     <div class="bento-grid">
       <div class="bento-card">
-        <div class="bento-icon lime">⚡</div>
+        <div class="bento-icon">01</div>
         <div>
-          <h3>100% Código Determinista</h3>
-          <p>Matemática pura: binarización Otsu, segmentación ortogonal y correlación coseno.</p>
+          <h3>Algoritmo Determinista</h3>
+          <p>Matemática pura: umbralización Otsu, segmentación ortogonal y correlación coseno.</p>
         </div>
       </div>
 
       <div class="bento-card">
-        <div class="bento-icon cyan">🔒</div>
+        <div class="bento-icon cyan">02</div>
         <div>
-          <h3>Cero Modelos de IA</h3>
-          <p>Sin pesos neuronales, sin redes LSTM y sin descargas externas pesadas.</p>
+          <h3>Cero Redes Neuronales</h3>
+          <p>Sin modelos entrenados, sin pesos externos y sin dependencias de nube.</p>
         </div>
       </div>
 
       <div class="bento-card">
-        <div class="bento-icon dark">🧩</div>
+        <div class="bento-icon">03</div>
         <div>
-          <h3>Ahorro máximo de tokens</h3>
-          <p>Convierte documentos pesados en texto Markdown limpio y ligero al instante.</p>
+          <h3>Compresión de Contexto</h3>
+          <p>Elimina metadatos binarios del PDF para reducir drásticamente el consumo de tokens.</p>
         </div>
       </div>
     </div>
   </div>
 
   <script>
+    // =========================================================================
+    // ANIMACIÓN DE LLUVIA MATRIX EN SEGUNDO PLANO
+    // =========================================================================
+    (function initMatrixRain() {
+      const canvas = document.getElementById('matrixBg');
+      const ctx = canvas.getContext('2d');
+      let width = canvas.width = window.innerWidth;
+      let height = canvas.height = window.innerHeight;
+      const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEF0123456789';
+      const fontSize = 14;
+      let columns = Math.floor(width / fontSize);
+      let drops = Array(columns).fill(1);
+
+      window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        columns = Math.floor(width / fontSize);
+        drops = Array(columns).fill(1);
+      });
+
+      setInterval(() => {
+        ctx.fillStyle = 'rgba(4, 7, 5, 0.08)';
+        ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = '#00FF41';
+        ctx.font = fontSize + 'px JetBrains Mono';
+
+        for (let i = 0; i < drops.length; i++) {
+          const text = chars[Math.floor(Math.random() * chars.length)];
+          ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+          if (drops[i] * fontSize > height && Math.random() > 0.975) {
+            drops[i] = 0;
+          }
+          drops[i]++;
+        }
+      }, 55);
+    })();
+
+    // =========================================================================
+    // MOTOR OCR 100% DETERMINISTA EN JAVASCRIPT PURO (SIN INTELIGENCIA ARTIFICIAL)
+    // =========================================================================
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    /**
-     * =========================================================================
-     * MOTOR OCR 100% DETERMINISTA EN JAVASCRIPT PURO (SIN INTELIGENCIA ARTIFICIAL)
-     * - Binarización por varianza entre clases de Otsu
-     * - Segmentación horizontal y vertical por proyección de histogramas
-     * - Normalización geométrica a matriz 16x24 y producto punto normalizado
-     * =========================================================================
-     */
     class DeterministicOCR {
       constructor() {
         this.GRID_W = 16;
@@ -1050,13 +1167,13 @@
     function handleFile(file) {
       statusText.textContent = '';
       if (file.type !== 'application/pdf') {
-        statusText.style.color = '#DC2626';
-        statusText.textContent = '⚠️ Por favor, selecciona un archivo PDF válido.';
+        statusText.style.color = 'var(--danger-red)';
+        statusText.textContent = '[ERR] FORMATO_INVALIDO: SE REQUIERE ARCHIVO .PDF';
         return;
       }
       if (file.size > 15 * 1024 * 1024) {
-        statusText.style.color = '#DC2626';
-        statusText.textContent = '⚠️ El archivo supera el tamaño máximo de 15 MB.';
+        statusText.style.color = 'var(--danger-red)';
+        statusText.textContent = '[ERR] BUFFER_OVERFLOW: LIMITE MAXIMO 15 MB';
         return;
       }
 
@@ -1127,8 +1244,8 @@
       convertBtn.disabled = true;
       progressWrap.style.display = 'block';
       progressBar.style.width = '5%';
-      statusText.style.color = '#3D9417';
-      statusText.textContent = 'Cargando documento PDF...';
+      statusText.style.color = 'var(--matrix-green)';
+      statusText.textContent = '> MONTANDO_BINARIO_PDF...';
 
       let ocrPagesCount = 0;
 
@@ -1137,7 +1254,7 @@
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
         if (pdf.numPages > 60) {
-          throw new Error('El documento excede el límite de 60 páginas.');
+          throw new Error('LIMITE_EXCEDIDO: MAXIMO 60 PAGINAS PERMITIDAS');
         }
 
         let markdownOutput = `# ${selectedFile.name.replace(/\.pdf$/i, '')}\n\n`;
@@ -1145,7 +1262,7 @@
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
           const basePercent = Math.round(((pageNum - 1) / pdf.numPages) * 100);
           progressBar.style.width = `${Math.max(5, basePercent)}%`;
-          statusText.textContent = `Procesando página ${pageNum} de ${pdf.numPages}...`;
+          statusText.textContent = `> ESCANEANDO_SECTOR [${pageNum}/${pdf.numPages}]...`;
 
           await new Promise(r => setTimeout(r, 0));
 
@@ -1157,15 +1274,15 @@
           const needsOcr = (ocrMode === 'deterministic') || (ocrMode === 'auto' && rawTextLength < 25);
 
           if (needsOcr) {
-            statusText.textContent = `Ejecutando OCR determinista en página ${pageNum} de ${pdf.numPages}...`;
+            statusText.textContent = `> EJECUTANDO_OCR_DETERMINISTA [${pageNum}/${pdf.numPages}]...`;
             const ocrText = await runDeterministicOcrOnPage(page);
             ocrPagesCount++;
 
-            const content = ocrText || '*(Página sin texto legible detectado)*';
-            markdownOutput += `<!-- Página ${pageNum} (OCR Determinista) -->\n${content}\n\n---\n\n`;
+            const content = ocrText || '*(SECTOR_SIN_GLIFOS_LEGIBLES)*';
+            markdownOutput += `<!-- PAGINA ${pageNum} // OCR_DETERMINISTA -->\n${content}\n\n---\n\n`;
           } else {
             if (items.length === 0) {
-              markdownOutput += `<!-- Página ${pageNum} -->\n*(Página vacía)*\n\n---\n\n`;
+              markdownOutput += `<!-- PAGINA ${pageNum} -->\n*(SECTOR_VACIO)*\n\n---\n\n`;
               continue;
             }
 
@@ -1202,7 +1319,7 @@
               .map(line => line.replace(/^[•●▪-]\s*/, '- '))
               .join('\n\n');
 
-            markdownOutput += `<!-- Página ${pageNum} -->\n${formattedPage}\n\n---\n\n`;
+            markdownOutput += `<!-- PAGINA ${pageNum} -->\n${formattedPage}\n\n---\n\n`;
           }
         }
 
@@ -1218,12 +1335,12 @@
 
         copyBtn.disabled = false;
         downloadBtn.disabled = false;
-        const ocrNote = ocrPagesCount > 0 ? ` (${ocrPagesCount} con OCR determinista)` : '';
-        statusText.textContent = `✓ ¡Completado en ${elapsed}s! ${pdf.numPages} páginas procesadas${ocrNote}.`;
+        const ocrNote = ocrPagesCount > 0 ? ` | OCR_DETERMINISTA: ${ocrPagesCount}` : '';
+        statusText.textContent = `[OK] EXTRACCION_COMPLETA EN ${elapsed}s // PAGINAS: ${pdf.numPages}${ocrNote}`;
 
       } catch (err) {
-        statusText.style.color = '#DC2626';
-        statusText.textContent = `⚠️ ${err.message || 'Ocurrió un error al leer el PDF.'}`;
+        statusText.style.color = 'var(--danger-red)';
+        statusText.textContent = `[ERR] ${err.message || 'FALLO_EN_LECTURA_DE_FLUJO'}`;
         progressWrap.style.display = 'none';
       } finally {
         convertBtn.disabled = false;
@@ -1233,8 +1350,8 @@
     copyBtn.addEventListener('click', () => {
       if (!outputArea.value) return;
       navigator.clipboard.writeText(outputArea.value).then(() => {
-        copyLabel.textContent = '¡Copiado al portapapeles!';
-        setTimeout(() => copyLabel.textContent = 'Copiar Markdown', 2000);
+        copyLabel.textContent = '[ BUFFER_COPIADO ]';
+        setTimeout(() => copyLabel.textContent = '[ COPIAR_BUFFER ]', 2000);
       });
     });
 
@@ -1244,7 +1361,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = selectedFile ? selectedFile.name.replace(/\.pdf$/i, '.md') : 'documento.md';
+      a.download = selectedFile ? selectedFile.name.replace(/\.pdf$/i, '.md') : 'output.md';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
